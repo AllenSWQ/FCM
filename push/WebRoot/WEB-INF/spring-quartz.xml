@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context.xsd">
+	<!-- 自定义定时器业务类 【步骤1】 -->
+
+	<!-- FCM推送 -->
+	<bean id="fcmPushJob" class="com.push.task.pushTask" />
+
+	<!-- 配置定时器的执行方法 【步骤2】 -->
+	<bean id="fcmPushDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="fcmPushJob" />
+		<property name="targetMethod" value="work" />
+		<!-- 是否允许任务并发执行。当值为false时，表示必须等到前一个线程处理完毕后才再启一个新的线程 -->
+		<property name="concurrent" value="true" />
+	</bean>
+	
+	<bean id="doPushLogDetail"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="fcmPushJob" />
+		<property name="targetMethod" value="doPushLog" />
+		<!-- 是否允许任务并发执行。当值为false时，表示必须等到前一个线程处理完毕后才再启一个新的线程 -->
+		<property name="concurrent" value="true" />
+	</bean>
+
+	<!-- Trigger配置 【步骤3】 -->
+	<bean id="fcmPushTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="fcmPushDetail" />
+		<property name="startDelay" value="1" />
+		<property name="cronExpression">
+			<value>0 0/10 * * * ?</value>
+		</property>
+	</bean>
+	
+	<bean id="doPushLogTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+		<property name="jobDetail" ref="doPushLogDetail" />
+		<property name="startDelay" value="1" />
+		<property name="cronExpression">
+			<value>0 5 * * * ?</value>
+		</property>
+	</bean>
+
+	<!-- Scheduler配置 【步骤4】 -->
+	<bean id="scheduler"
+		class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref bean="fcmPushTrigger" />
+				<ref bean="doPushLogTrigger" />
+			</list>
+		</property>
+		<property name="autoStartup" value="true"></property>
+	</bean>
+</beans>
